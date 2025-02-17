@@ -1,11 +1,26 @@
-    
+# Import libraries    
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle,Spacer,Paragraph,Frame,PageTemplate
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
+import os
+import logging
 
+cwd = os.getcwd()
+invoice_data_file_path = os.path.join(cwd, "invoice_data.xlsx")
+output_data_file_path = os.path.join(cwd, "data", "invoice_data_out.xlsx")
+output_pdf_file_path = os.path.join(cwd, "data")
+
+# Create and configure logger
+logging.basicConfig(filename="inivoice_data.log",
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    filemode='w')
+
+# Creating an object
+logger = logging.getLogger()
+logger.info("Starting the program")
 try:
     
     company_name='Tech Solutions Inc.'
@@ -20,27 +35,29 @@ try:
     # df=pd.DataFrame(data)
 
     # df.to_excel(r"C:\Users\Star Computer\Desktop\Python programs\invoice_data.xlsx",sheet_name='Sheet1',index=False)
-
+    logger.info("Reading the excel path")
     # reading Excel file
-    df=pd.read_excel(r"C:\Users\Star Computer\Desktop\Python programs\invoice_data.xlsx",engine='openpyxl')
-    df['Total_price']=df['Quantity']*df['Unit_price']#calculating Total price group by cust_id
-    df['Tax']=df['Total_price']*(5/100)#calculating Tax group by cust_id
-    df['Grand_Total']=df['Total_price']+df['Tax']#calculating Grand Total
+    df = pd.read_excel(invoice_data_file_path, engine='openpyxl')
+
+    logger.info("Calculating")
+    df['Total_price'] = df['Quantity'] * df['Unit_price']#calculating Total price group by cust_id
+    df['Tax'] = df['Total_price']*(5/100)#calculating Tax group by cust_id
+    df['Grand_Total'] = df['Total_price']+df['Tax']#calculating Grand Total
     #adding calculations to Excel File
-    df.to_excel(r"C:\Users\Star Computer\Desktop\Python programs\invoice_data.xlsx",sheet_name='Sheet1',index=False)
+    df.to_excel(output_data_file_path, sheet_name='Sheet1', index=False)
     #group by cust_id
     df1=df.groupby('Cust_id')
-    cnt=1#counter for giving invoice number
+    cnt = 1#counter for giving invoice number
     for cust_id,group in df1:
-        Invoice_number='INV-'+str(pd.to_datetime("today").strftime("%Y-%m-%d"))+'-00'+str(cnt)
+        Invoice_number = 'INV-' + str(pd.to_datetime("today").strftime("%Y-%m-%d")) + '-00'+str(cnt)
         cnt+=1
         Invoice_Date=pd.to_datetime("today").strftime("%Y-%m-%d")
         df2=group[['Product_Id', 'Product Name','Quantity','Unit_price','Total_price']]
         Subtotal=group['Total_price'].sum()
         Tax=group['Tax'].sum()
         Grand_Total=group['Grand_Total'].sum()
-        outputpdf='Output'+str(cust_id)
-        doc = SimpleDocTemplate(rf"C:\Users\Star Computer\Desktop\Python programs\Invoice_generated\{outputpdf}.pdf", pagesize=letter)
+        outputpdf = 'Output'+str(cust_id)
+        doc = SimpleDocTemplate(os.path.join(output_pdf_file_path, f"{outputpdf}.pdf"), pagesize=letter)
         elements=[]
         # Margins and dimensions (using mm for example, adjust as needed):
         margin = 20 * mm
@@ -100,6 +117,7 @@ try:
         
     print("Check pdf in respected folder:)")
 except Exception as e:
-    print(e)
+    logger.error(str(e))
+    #print(e)
 
 
